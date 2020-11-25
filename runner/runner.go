@@ -66,15 +66,46 @@ type BaseRunner struct {
 }
 
 const (
+	ErrorLabel  = "RunnerError"
+	FormatError = "[%s]: %s"
+
 	NilData = "nil data."
+
+	NilCommand = "nil command."
 )
+
+func NewError(message string) error {
+
+	return errors.New(fmt.Sprintf(FormatError, ErrorLabel, message))
+}
 
 func (this *BaseRunner) LoadData(data *puller.Data) error {
 	if data == nil {
-		return errors.New(fmt.Sprintf("RunnerError: %s", NilData))
+        return NewError(NilData)
 	}
 
 	this.Data = data
+
+    this.Result = &Result{
+        data.TestCase.Input,
+        "",
+    }
+
+	return nil
+}
+
+func (this *BaseRunner) Run() error {
+	if this.Command == nil {
+        return NewError(NilCommand)
+	}
+
+    output, err := this.Command.Output()
+
+    if err != nil {
+        return NewError(err.Error())
+    }
+
+    this.Result.Output = string(output)
 
 	return nil
 }

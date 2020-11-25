@@ -22,6 +22,10 @@ type TestChild struct {
 	age int
 }
 
+func (this *TestChild) GetName() string {
+	return this.name + "!"
+}
+
 func (this *TestChild) GetAge() int {
 	return this.age
 }
