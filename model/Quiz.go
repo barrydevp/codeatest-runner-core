@@ -6,7 +6,7 @@ type Stat struct {
 	Difficult string `json:"difficult" bson:"difficult"`
 	Author    string `json:"author" bson:"author"`
 	Submitted string `json:"submitted" bson:"submitted"`
-	Score     string `json:"score" bson:"score"`
+	Score     int64  `json:"score" bson:"score"`
 }
 
 type Template struct {
@@ -15,10 +15,10 @@ type Template struct {
 }
 
 type Limit struct {
-	Submit  string `json:"submit" bson:"submit"`
-	Memory  string `json:"memory" bson:"memory"`
-	Cpu     string `json:"cpu" bson:"cpu"`
-	Timeout string `json:"timeout" bson:"timeout"`
+	Submit  int64 `json:"submit" bson:"submit"`
+	Memory  int64 `json:"memory" bson:"memory"`
+	Cpu     int64 `json:"cpu" bson:"cpu"`
+	Timeout int64 `json:"timeout" bson:"timeout"`
 }
 
 type Quiz struct {

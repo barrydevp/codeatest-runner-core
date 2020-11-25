@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/barrydevp/codeatest-runner-core/puller"
 )
@@ -81,31 +82,35 @@ func NewError(message string) error {
 
 func (this *BaseRunner) LoadData(data *puller.Data) error {
 	if data == nil {
-        return NewError(NilData)
+		return NewError(NilData)
 	}
 
 	this.Data = data
 
-    this.Result = &Result{
-        data.TestCase.Input,
-        "",
-    }
+	this.Result = &Result{
+		data.TestCase.Input,
+		"",
+	}
 
 	return nil
 }
 
 func (this *BaseRunner) Run() error {
 	if this.Command == nil {
-        return NewError(NilCommand)
+		return NewError(NilCommand)
 	}
 
-    output, err := this.Command.Output()
+	if this.Data == nil {
+		return NewError(NilData)
+	}
 
-    if err != nil {
-        return NewError(err.Error())
-    }
+	output, err := this.Command.Output(ctx)
 
-    this.Result.Output = string(output)
+	if err != nil {
+		return NewError(err.Error())
+	}
+
+	this.Result.Output = string(output)
 
 	return nil
 }
