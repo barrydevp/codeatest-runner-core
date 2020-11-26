@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"context"
@@ -27,23 +27,19 @@ type Runner interface {
 	LoadData(*puller.Data) error
 
 	// RUN RUN RUN...
-	Run() error
+	Run() (*Result, error)
 
-	Reload() error
+	// Reload() error
 
-	Clear() error
-
-	Kill() error
+	// Kill() error
 
 	GetName() string
 
-	GetContext() *context.Context
-
 	GetState() string
 
-	GetData() *puller.Data
+	// GetData() *puller.Data
 
-	GetCommand() *exec.Cmd
+	// GetCommand() *exec.Cmd
 
 	GetResult() *Result
 
@@ -59,11 +55,11 @@ type BaseRunner struct {
 
 	Result *Result
 
-	Ctx *context.Context
-
 	Events []Event
 
 	Command *exec.Cmd
+
+    BaseArgs []string
 }
 
 const (
@@ -73,6 +69,8 @@ const (
 	NilData = "nil data."
 
 	NilCommand = "nil command."
+
+	MissingBaseArgs = "missing command args to run."
 )
 
 func NewError(message string) error {
@@ -80,65 +78,95 @@ func NewError(message string) error {
 	return errors.New(fmt.Sprintf(FormatError, ErrorLabel, message))
 }
 
-func (this *BaseRunner) LoadData(data *puller.Data) error {
-	if data == nil {
-		return NewError(NilData)
-	}
+func (br *BaseRunner) AbleToRun() error {
+    if br.Data == nil { 
+        return NewError(NilData)
+    }
+   
+    // if br.Command == nil {
+    //     return NewError(NilCommand)
+    // }
 
-	this.Data = data
+    if len(br.BaseArgs) <= 0 {
+        return NewError(MissingBaseArgs)
+    }
 
-	this.Result = &Result{
-		data.TestCase.Input,
-		"",
-	}
-
-	return nil
+    return nil
 }
 
-func (this *BaseRunner) Run() error {
-	if this.Command == nil {
-		return NewError(NilCommand)
-	}
+// func (br *BaseRunner) CreateResult() *Result {
 
-	if this.Data == nil {
-		return NewError(NilData)
-	}
+//     input := br.Data.Quiz.TestCase
 
-	output, err := this.Command.Output(ctx)
+// }
 
-	if err != nil {
-		return NewError(err.Error())
-	}
+func (br *BaseRunner) Run() (*Result, error) {
+    err := br.AbleToRun()
 
-	this.Result.Output = string(output)
+    if err != nil {
+        return nil, err
+    }
 
-	return nil
+    limit := br.Data.Quiz.Limit
+
+    timeout := limit.Timeout
+    // memory := limit.Memory
+
+    var timeoutSec int64 = 10
+
+    if(timeout > 0) {
+        timeoutSec = timeout
+    }
+
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeoutSec))
+
+    defer cancel()
+
+	// abs, err := filepath.Abs("./tests/hello.go")
+
+    // if err != nil {
+        // return nil, err
+    // }
+    
+    cmdArgs := append(br.BaseArgs, br.Data.FilePath)
+
+    cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
+
+    br.Command = cmd
+
+    output, err := cmd.Output()
+
+    if err != nil {
+
+        return nil, err
+    }
+
+    return &Result{
+        "",
+        string(output),
+    }, nil
 }
 
-func (this *BaseRunner) GetName() string {
-	return this.Name
+func (br *BaseRunner) GetName() string {
+	return br.Name
 }
 
-func (this *BaseRunner) GetState() string {
-	return this.State
+func (br *BaseRunner) GetState() string {
+	return br.State
 }
 
-func (this *BaseRunner) GetData() *puller.Data {
-	return this.Data
+func (br *BaseRunner) GetData() *puller.Data {
+	return br.Data
 }
 
-func (this *BaseRunner) GetResult() *Result {
-	return this.Result
+func (br *BaseRunner) GetResult() *Result {
+	return br.Result
 }
 
-func (this *BaseRunner) GetContext() *context.Context {
-	return this.Ctx
+func (br *BaseRunner) GetEvents() []Event {
+	return br.Events
 }
 
-func (this *BaseRunner) GetEvents() []Event {
-	return this.Events
-}
-
-func (this *BaseRunner) GetCommand() *exec.Cmd {
-	return this.Command
+func (br *BaseRunner) GetCommand() *exec.Cmd {
+	return br.Command
 }

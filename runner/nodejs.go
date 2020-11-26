@@ -11,11 +11,11 @@ import (
 	"github.com/barrydevp/codeatest-runner-core/model"
 )
 
-type Golang struct {
+type Nodejs struct {
     BaseRunner
 }
 
-func (g *Golang) LoadData(data *puller.Data) error {
+func (g *Nodejs) LoadData(data *puller.Data) error {
     if data == nil {
         return NewError(NilData)
     }
@@ -25,17 +25,17 @@ func (g *Golang) LoadData(data *puller.Data) error {
     return nil
 }
 
-func NewGolang() Runner {
+func NewNodejs() Runner {
 
-	abs, err := filepath.Abs("./tests/hello.go")
+	abs, err := filepath.Abs("./tests/hello.js")
 
     if err != nil {
         return nil
     }
 
-    runner := &Golang{
+    runner := &Nodejs{
         BaseRunner{
-            "golang",
+            "Nodejs",
             "created",
             &puller.Data{
                 model.Job{},
@@ -46,7 +46,7 @@ func NewGolang() Runner {
             nil,
             nil,
             nil,
-            []string{"go", "run"},
+            []string{"node"},
         },
     }
 
