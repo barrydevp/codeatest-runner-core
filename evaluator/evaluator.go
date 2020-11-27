@@ -14,7 +14,7 @@ type Result struct {
 	RunOutput   string
 	RunExitCode int
 	RunTime     int64
-	RunMemory   int64
+	RunMemory   int64 // in kb
 }
 
 func Evaluate(rCmd *runner.RunnerCmd) bool {
