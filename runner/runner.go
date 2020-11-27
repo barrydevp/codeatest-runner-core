@@ -20,6 +20,8 @@ type Runner struct {
 
 	Command  string
 	BaseArgs []string
+	Env      []string
+	Dir      string
 }
 
 type RunnerCmd struct {
@@ -59,14 +61,16 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 		input := testCases[i].Input
 
 		args := make([]string, 0, len(r.BaseArgs)+1)
-		copy(r.BaseArgs, args)
-
+		args = append(args, r.BaseArgs...)
 		args = append(args, data.FilePath)
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutDur)
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, r.Command, args...)
+		cmd.Dir = r.Dir
+		cmd.Env = r.Env
+
 		stdin, err := cmd.StdinPipe()
 
 		if err != nil {
