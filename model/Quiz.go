@@ -5,7 +5,7 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 type Stat struct {
 	Difficult string `json:"difficult" bson:"difficult"`
 	Author    string `json:"author" bson:"author"`
-	Submitted string `json:"submitted" bson:"submitted"`
+	Submitted int64  `json:"submitted" bson:"submitted"`
 	Score     int64  `json:"score" bson:"score"`
 }
 
@@ -22,6 +22,7 @@ type Limit struct {
 }
 
 type Quiz struct {
+	Id       primitive.ObjectID `json:"_id" bson:"_id"`
 	Topic       primitive.ObjectID `json:"topic" bson:"topic"`
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
@@ -31,6 +32,8 @@ type Quiz struct {
 	Stat        Stat               `json:"stat" bson:"stat"`
 	Limit       Limit              `json:"limit" bson:"limit"`
 	IsDeleted   bool               `json:"is_deleted" bson:"is_deleted"`
-	UpdatedAt   primitive.DateTime `json:"updated_at"`
-	CreatedAt   primitive.DateTime `json:"created_at"`
+	UpdatedAt  primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	CreatedAt  primitive.DateTime `json:"created_at" bson:"created_at"`
+
+    TestCaseObjs []TestCase
 }

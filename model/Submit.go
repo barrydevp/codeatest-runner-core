@@ -14,6 +14,8 @@ type Submit struct {
 	UploadFile string             `json:"upload_file" bson:"upload_file"`
 	Status     string             `json:"status" bson:"status"`
 	Result     Result             `json:"result" bson:"result"`
-	UpdatedAt  primitive.DateTime `json:"updated_at"`
-	CreatedAt  primitive.DateTime `json:"created_at"`
+	UpdatedAt  primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	CreatedAt  primitive.DateTime `json:"created_at" bson:"created_at"`
+
+	UserQuizObj *UserQuiz
 }

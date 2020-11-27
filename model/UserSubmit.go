@@ -7,4 +7,7 @@ type UserQuiz struct {
 	Quiz      primitive.ObjectID `json:"quiz" bson:"quiz"`
 	Result    Result             `json:"result" bson:"result"`
 	CreatedAt primitive.DateTime `json:"created_at"`
+
+	UserTopicObj *UserTopic
+	QuizObj      *Quiz
 }
