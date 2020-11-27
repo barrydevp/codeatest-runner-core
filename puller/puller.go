@@ -15,7 +15,7 @@ type Data struct {
 
 	Quiz model.Quiz
 
-	TestCase model.TestCase
+	TestCases []model.TestCase
 
 	FilePath string
 }

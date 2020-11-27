@@ -4,169 +4,113 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"os/exec"
+	"sync"
 	"time"
 
+	"github.com/barrydevp/codeatest-runner-core/model"
 	"github.com/barrydevp/codeatest-runner-core/puller"
 )
 
-type Result struct {
-	Input string
+type Runner struct {
+	Name  string
+	State string
+
+	Command  string
+	BaseArgs []string
+}
+
+type RunnerCmd struct {
+	Cmd *exec.Cmd
+
+	TestCase model.TestCase
+
+	Limit model.Limit
 
 	Output string
 }
 
-type Event struct {
-	Name string
+func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 
-	Value string
-}
+	if data == nil {
+		return nil, errors.New("[RunnerErro]: invalid data.")
+	}
 
-type Runner interface {
-	// Load Data need to run.
-	LoadData(*puller.Data) error
+	limit := data.Quiz.Limit
 
-	// RUN RUN RUN...
-	Run() (*Result, error)
+	timeout := limit.Timeout
+	// memory := limit.Memory
 
-	// Reload() error
+	var timeoutSec int64 = 10
 
-	// Kill() error
+	if timeout > 0 {
+		timeoutSec = timeout
+	}
 
-	GetName() string
+	timeoutDur := time.Second * time.Duration(timeoutSec)
 
-	GetState() string
+	testCases := data.TestCases
 
-	// GetData() *puller.Data
+	rCmds := make([]*RunnerCmd, 0, len(testCases))
 
-	// GetCommand() *exec.Cmd
+	for i := 0; i < len(testCases); i++ {
+		input := testCases[i].Input
 
-	GetResult() *Result
+		args := make([]string, 0, len(r.BaseArgs)+1)
+		copy(r.BaseArgs, args)
 
-	GetEvents() []Event
-}
+		args = append(args, data.FilePath)
 
-type BaseRunner struct {
-	Name string
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutDur)
+		defer cancel()
 
-	State string
+		cmd := exec.CommandContext(ctx, r.Command, args...)
+		stdin, err := cmd.StdinPipe()
 
-	Data *puller.Data
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("[RunnerError]: %s", err.Error()))
+		}
 
-	Result *Result
+		go func() {
+			defer stdin.Close()
+			io.WriteString(stdin, input)
+		}()
 
-	Events []Event
+		rCmd := RunnerCmd{
+			cmd,
+			testCases[i],
+			limit,
+			"",
+		}
 
-	Command *exec.Cmd
+		rCmds = append(rCmds, &rCmd)
+	}
 
-    BaseArgs []string
-}
+	var wg sync.WaitGroup
 
-const (
-	ErrorLabel  = "RunnerError"
-	FormatError = "[%s]: %s"
+	fork := func(rCmd *RunnerCmd) {
+		cmd := rCmd.Cmd
 
-	NilData = "nil data."
+		output, err := cmd.CombinedOutput()
 
-	NilCommand = "nil command."
+		if err != nil {
+			log.Printf("[RunnerLog]: Error while run cmd %s\n", err.Error())
+		}
 
-	MissingBaseArgs = "missing command args to run."
-)
+		rCmd.Output = string(output)
 
-func NewError(message string) error {
+		wg.Done()
+	}
 
-	return errors.New(fmt.Sprintf(FormatError, ErrorLabel, message))
-}
+	wg.Add(len(rCmds))
 
-func (br *BaseRunner) AbleToRun() error {
-    if br.Data == nil { 
-        return NewError(NilData)
-    }
-   
-    // if br.Command == nil {
-    //     return NewError(NilCommand)
-    // }
+	for i := 0; i < len(rCmds); i++ {
+		go fork(rCmds[i])
+	}
 
-    if len(br.BaseArgs) <= 0 {
-        return NewError(MissingBaseArgs)
-    }
+	wg.Wait()
 
-    return nil
-}
-
-// func (br *BaseRunner) CreateResult() *Result {
-
-//     input := br.Data.Quiz.TestCase
-
-// }
-
-func (br *BaseRunner) Run() (*Result, error) {
-    err := br.AbleToRun()
-
-    if err != nil {
-        return nil, err
-    }
-
-    limit := br.Data.Quiz.Limit
-
-    timeout := limit.Timeout
-    // memory := limit.Memory
-
-    var timeoutSec int64 = 10
-
-    if(timeout > 0) {
-        timeoutSec = timeout
-    }
-
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeoutSec))
-
-    defer cancel()
-
-	// abs, err := filepath.Abs("./tests/hello.go")
-
-    // if err != nil {
-        // return nil, err
-    // }
-    
-    cmdArgs := append(br.BaseArgs, br.Data.FilePath)
-
-    cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
-
-    br.Command = cmd
-
-    output, err := cmd.Output()
-
-    if err != nil {
-
-        return nil, err
-    }
-
-    return &Result{
-        "",
-        string(output),
-    }, nil
-}
-
-func (br *BaseRunner) GetName() string {
-	return br.Name
-}
-
-func (br *BaseRunner) GetState() string {
-	return br.State
-}
-
-func (br *BaseRunner) GetData() *puller.Data {
-	return br.Data
-}
-
-func (br *BaseRunner) GetResult() *Result {
-	return br.Result
-}
-
-func (br *BaseRunner) GetEvents() []Event {
-	return br.Events
-}
-
-func (br *BaseRunner) GetCommand() *exec.Cmd {
-	return br.Command
+	return rCmds, nil
 }

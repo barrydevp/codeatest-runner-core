@@ -1,54 +1,54 @@
 package runner
 
-import (
-	// "context"
-	// "fmt"
-	// "os/exec"
-	"path/filepath"
-	// "time"
+// import (
+// 	// "context"
+// 	// "fmt"
+// 	// "os/exec"
+// 	"path/filepath"
+// 	// "time"
 
-	"github.com/barrydevp/codeatest-runner-core/puller"
-	"github.com/barrydevp/codeatest-runner-core/model"
-)
+// 	"github.com/barrydevp/codeatest-runner-core/model"
+// 	"github.com/barrydevp/codeatest-runner-core/puller"
+// )
 
-type Nodejs struct {
-    BaseRunner
-}
+// type Nodejs struct {
+//     BaseRunner
+// }
 
-func (g *Nodejs) LoadData(data *puller.Data) error {
-    if data == nil {
-        return NewError(NilData)
-    }
+// func (g *Nodejs) LoadData(data *puller.Data) error {
+//     if data == nil {
+//         return NewError(NilData)
+//     }
 
-    g.Data = data
+//     g.Data = data
 
-    return nil
-}
+//     return nil
+// }
 
-func NewNodejs() Runner {
+// func NewNodejs() Runner {
 
-	abs, err := filepath.Abs("./tests/hello.js")
+// 	abs, err := filepath.Abs("./tests/hello.js")
 
-    if err != nil {
-        return nil
-    }
+//     if err != nil {
+//         return nil
+//     }
 
-    runner := &Nodejs{
-        BaseRunner{
-            "Nodejs",
-            "created",
-            &puller.Data{
-                model.Job{},
-                model.Quiz{},
-                model.TestCase{},
-                abs,
-            },
-            nil,
-            nil,
-            nil,
-            []string{"node"},
-        },
-    }
+//     runner := &Nodejs{
+//         BaseRunner{
+//             "Nodejs",
+//             "created",
+//             &puller.Data{
+//                 model.Job{},
+//                 model.Quiz{},
+//                 model.TestCase{},
+//                 abs,
+//             },
+//             nil,
+//             nil,
+//             nil,
+//             []string{"node"},
+//         },
+//     }
 
-    return runner
-}
+//     return runner
+// }
