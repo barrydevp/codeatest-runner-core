@@ -2,6 +2,8 @@ package puller
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/barrydevp/codeatest-runner-core/connections"
@@ -25,6 +27,32 @@ func PullData() (Data, error) {
 
 	return Data{}, nil
 }
+
+// func GetSubmits(ctx context.Context) ([]model.Submit, error) {
+// 	stage := bson.D{
+// 		{"$match", bson.D{{"status", bson.M{"$in": []string{"pending", "retry"}}}}},
+// 		{"$limit", 10},
+// 		{"$lookup", bson.D{
+// 			{"from", "userquizzes"},
+// 			{"let", bson.D{{"user_quiz_id", "$user_quiz"}}},
+// 			{"pipeline", bson.D{
+// 				{"$match", bson.D{{"_id", "$$user_quiz_id"}}},
+// 				{"$lookup", bson.D{
+// 					{"from", "usertopics"},
+// 					{"let", bson.D{{"user_topic_id", "$user_topic"}}},
+// 					{"pipeline", bson.D{
+// 						{"$match", bson.D{{"_id", "$$user_topic_id"}}},
+// 						{"$lookup", bson.D{
+// 							{"from", "quizzes"},
+// 							{"localField", "quiz"},
+// 							{"foreignField", "_id"},
+// 							{"as", "quiz"},
+// 						}},
+// 					}}, }},
+// 			}},
+// 		}},
+// 	}
+// }
 
 func GetSubmit(ctx context.Context) (*model.Submit, error) {
 	SubmitColl := connections.GetModel("submits")
@@ -75,7 +103,7 @@ func GetUserQuiz(ctx context.Context, _id primitive.ObjectID) (*model.UserQuiz, 
 		return nil, err
 	}
 
-	quiz, err := GetQuiz(ctx, userQuiz.Quiz)
+	quiz, err := GetQuizV2(ctx, userQuiz.Quiz)
 
 	if err != nil {
 		return nil, err
@@ -105,11 +133,46 @@ func GetQuiz(ctx context.Context, _id primitive.ObjectID) (*model.Quiz, error) {
 		return nil, err
 	}
 
-    testCases, err := GetTestCases(ctx, quiz.Id)
+	testCases, err := GetTestCases(ctx, quiz.Id)
 
-    quiz.TestCaseObjs = testCases
+	quiz.TestCaseObjs = testCases
 
 	return &quiz, nil
+}
+
+func GetQuizV2(ctx context.Context, quizId primitive.ObjectID) (*model.Quiz, error) {
+	QuizColl := connections.GetModel("quizzes")
+
+	stage := bson.D{
+		{"$match", bson.M{"_id": quizId}},
+		{"$lookup", bson.M{
+			"from":         "testcases",
+			"localField":   "_id",
+			"foreignField": "quiz",
+			"as":           "test_case_objs",
+		}},
+	}
+
+	if obj, err := json.Marshal(stage); err == nil {
+		fmt.Println(string(obj))
+	}
+
+	opts := options.Aggregate().SetMaxTime(2 * time.Second)
+
+	cursor, err := QuizColl.Aggregate(ctx, stage, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("OK")
+	var quizzes []model.Quiz
+
+	if err = cursor.All(ctx, &quizzes); err != nil {
+		return nil, err
+	}
+
+	return &quizzes[0], nil
 }
 
 func GetTestCases(ctx context.Context, quizId primitive.ObjectID) ([]model.TestCase, error) {
@@ -131,8 +194,8 @@ func GetTestCases(ctx context.Context, quizId primitive.ObjectID) ([]model.TestC
 		return nil, err
 	}
 
-    if err = cursor.All(ctx, &testCases); err != nil {
-        return nil, err
+	if err = cursor.All(ctx, &testCases); err != nil {
+		return nil, err
 	}
 
 	return testCases, nil

@@ -22,7 +22,7 @@ type Limit struct {
 }
 
 type Quiz struct {
-	Id       primitive.ObjectID `json:"_id" bson:"_id"`
+	Id          primitive.ObjectID `json:"_id" bson:"_id"`
 	Topic       primitive.ObjectID `json:"topic" bson:"topic"`
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
@@ -32,8 +32,8 @@ type Quiz struct {
 	Stat        Stat               `json:"stat" bson:"stat"`
 	Limit       Limit              `json:"limit" bson:"limit"`
 	IsDeleted   bool               `json:"is_deleted" bson:"is_deleted"`
-	UpdatedAt  primitive.DateTime `json:"updated_at" bson:"updated_at"`
-	CreatedAt  primitive.DateTime `json:"created_at" bson:"created_at"`
+	UpdatedAt   primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	CreatedAt   primitive.DateTime `json:"created_at" bson:"created_at"`
 
-    TestCaseObjs []TestCase
+	TestCaseObjs []TestCase `json:"test_case_objs" bson:"test_case_objs"`
 }

@@ -17,5 +17,5 @@ type Submit struct {
 	UpdatedAt  primitive.DateTime `json:"updated_at" bson:"updated_at"`
 	CreatedAt  primitive.DateTime `json:"created_at" bson:"created_at"`
 
-	UserQuizObj *UserQuiz
+	UserQuizObj *UserQuiz `json:"user_quiz_obj" bson:"user_quiz_obj"`
 }
