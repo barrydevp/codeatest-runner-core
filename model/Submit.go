@@ -9,6 +9,7 @@ type Result struct {
 }
 
 type Submit struct {
+	Id         primitive.ObjectID `json:"_id" bson:"_id"`
 	UserQuiz   primitive.ObjectID `json:"user_quiz" bson:"user_quiz"`
 	Language   string             `json:"language" bson:"language"`
 	UploadFile string             `json:"upload_file" bson:"upload_file"`

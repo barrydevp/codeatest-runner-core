@@ -40,7 +40,9 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 		return nil, errors.New("[RunnerErro]: invalid data.")
 	}
 
-	limit := data.Quiz.Limit
+	quiz := data.Quiz
+
+	limit := quiz.Limit
 
 	timeout := limit.Timeout
 	// memory := limit.Memory
@@ -53,7 +55,7 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 
 	timeoutDur := time.Second * time.Duration(timeoutSec)
 
-	testCases := data.TestCases
+	testCases := quiz.TestCaseObjs
 
 	rCmds := make([]*RunnerCmd, 0, len(testCases))
 

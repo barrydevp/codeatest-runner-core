@@ -20,7 +20,7 @@ type Result struct {
 func Evaluate(rCmd *runner.RunnerCmd) bool {
 	fmt.Println(rCmd.Cmd.String())
 
-	fmt.Printf("OUT: %sTEST: %s", string(rCmd.Output), rCmd.TestCase.Output)
+	fmt.Printf("TEST: %sOUTPUT: %s", rCmd.TestCase.Output, string(rCmd.Output))
 
 	usage, _ := rCmd.Cmd.ProcessState.SysUsage().(*syscall.Rusage)
 
