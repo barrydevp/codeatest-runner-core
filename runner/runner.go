@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
@@ -117,6 +118,13 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 	}
 
 	wg.Wait()
+
+	// clear file
+	err := os.Remove(data.FilePath)
+
+	if err != nil {
+		log.Printf("[WARNING] Cannot rm %s\n", data.FilePath)
+	}
 
 	return rCmds, nil
 }
