@@ -11,7 +11,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	submit, err := puller.GetSubmit(ctx)
+	submit, err := puller.GetSubmit(ctx, "js")
 
 	if err != nil {
 		log.Fatal(err)
@@ -19,5 +19,4 @@ func main() {
 
 	fmt.Println(submit)
 	fmt.Println(*submit.UserQuizObj)
-	fmt.Println(*submit.UserQuizObj.QuizObj)
 }

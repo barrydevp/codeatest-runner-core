@@ -14,7 +14,7 @@ func main() {
 
 	file := "code/5fac0e502f823e38f0f9c9ac/5fac0c08e113d8633c01edb6/go/3025015a85d4b3de2088c9780ea085b0"
 
-	filePath, err := services.DownloadFile(file)
+	filePath, err := services.DownloadFile(file, "go")
 
 	if err != nil {
 		log.Fatal(err)

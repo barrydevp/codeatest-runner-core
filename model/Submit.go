@@ -3,9 +3,9 @@ package model
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Result struct {
-	Score      int64   `json:"score" bson:"score"`
-	Time       float64 `json:"time" bson:"time"`
-	MemoryUsed int64   `json:"memory_used" bson:"memory_used"`
+	Score      int32 `json:"score" bson:"score"`
+	Time       int64 `json:"time" bson:"time"`
+	MemoryUsed int64 `json:"memory_used" bson:"memory_used"`
 }
 
 type Submit struct {

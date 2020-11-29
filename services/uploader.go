@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
+
 	// "fmt"
 	"io/ioutil"
 	"log"
@@ -22,13 +24,14 @@ var DEFAULT_BUCKET_NAME string
 func init() {
 	DEFAULT_CREDENTIALS, _ = filepath.Abs("./services/credentials.json")
 
-	DEFAULT_PROJECT_ID = "code-and-t"
-	DEFAULT_BUCKET_NAME = "codeatest"
+	// DEFAULT_PROJECT_ID = "code-and-t"
+	// DEFAULT_BUCKET_NAME = "codeatest"
+	DEFAULT_PROJECT_ID = "abiding-weaver-291614c"
+	DEFAULT_BUCKET_NAME = "codeatest2"
 
 	GGClient = CreateGGClient(DEFAULT_CREDENTIALS, DEFAULT_PROJECT_ID)
 
 }
-
 func CreateGGClient(jsonPath, projectID string) *storage.Client {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(jsonPath))
@@ -61,7 +64,7 @@ func DownloadFile(file string) (string, error) {
 		return "", err
 	}
 
-	filePath, err := filepath.Abs("./.temp-download/" + file)
+	filePath, err := filepath.Abs(fmt.Sprintf("./.temp-download/%s", file))
 
 	directory := filepath.Dir(filePath)
 

@@ -7,6 +7,6 @@ type Worker struct {
 	Yaml      string             `json:"yaml" bson:"yaml"`
 	Status    string             `json:"status" bson:"status"`
 	IsDeleted bool               `json:"is_deleted" bson:"is_deleted"`
-	UpdatedAt primitive.DateTime `json:"updated_at"`
-	CreatedAt primitive.DateTime `json:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	CreatedAt primitive.DateTime `json:"created_at" bson:"created_at"`
 }

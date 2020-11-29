@@ -24,11 +24,15 @@ type Data struct {
 	FilePath string
 }
 
-func PullData() (*Data, error) {
+type Puller struct {
+	Language string
 
-	ctx := context.Background()
+	BucketSize int
+}
 
-	submit, err := GetSubmit(ctx)
+func (p *Puller) PullData(ctx context.Context) (*Data, error) {
+
+	submit, err := GetSubmit(ctx, p.Language)
 
 	if err != nil {
 		return nil, err
@@ -38,7 +42,7 @@ func PullData() (*Data, error) {
 		return nil, errors.New("Nil UserQuiz")
 	}
 
-	filePath, err := GetFilePath(submit)
+	filePath, err := p.GetFilePath(submit)
 
 	if err != nil {
 		return nil, err
@@ -60,7 +64,7 @@ func PullData() (*Data, error) {
 	}, nil
 }
 
-func GetFilePath(submit *model.Submit) (string, error) {
+func (p *Puller) GetFilePath(submit *model.Submit) (string, error) {
 
 	return services.DownloadFile(submit.UploadFile)
 }
@@ -74,7 +78,7 @@ func CreateJob(submit *model.Submit) *model.Job {
 		workerId,
 		submit.Id,
 		"process",
-		primitive.M{},
+		model.Results{},
 		primitive.DateTime(time.Now().UnixNano()),
 		primitive.DateTime(time.Now().UnixNano()),
 	}
@@ -108,7 +112,7 @@ func CreateJob(submit *model.Submit) *model.Job {
 // 	}
 // }
 
-func GetSubmits(ctx context.Context, limit int64) ([]model.Submit, error) {
+func GetSubmits(ctx context.Context, language string, limit int64) ([]model.Submit, error) {
 	SubmitColl := connections.GetModel("submits")
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*time.Duration(10))
@@ -120,7 +124,8 @@ func GetSubmits(ctx context.Context, limit int64) ([]model.Submit, error) {
 	var submits []model.Submit
 
 	cursor, err := SubmitColl.Find(ctxTimeout, bson.M{
-		"status": bson.M{"$in": []string{"pending", "retry"}},
+		"status":   bson.M{"$in": []string{"pending", "retry"}},
+		"language": language,
 	}, opts)
 
 	if err != nil {
@@ -134,7 +139,7 @@ func GetSubmits(ctx context.Context, limit int64) ([]model.Submit, error) {
 	return submits, nil
 }
 
-func GetSubmit(ctx context.Context) (*model.Submit, error) {
+func GetSubmit(ctx context.Context, language string) (*model.Submit, error) {
 	SubmitColl := connections.GetModel("submits")
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*time.Duration(10))
@@ -146,7 +151,8 @@ func GetSubmit(ctx context.Context) (*model.Submit, error) {
 	opts := options.FindOne().SetSort(bson.D{{"created_at", 1}})
 
 	err := SubmitColl.FindOne(ctxTimeout, bson.M{
-		"status": bson.M{"$in": []string{"pending", "retry"}},
+		"status":   bson.M{"$in": []string{"pending", "retry"}},
+		"language": language,
 	}, opts).Decode(&submit)
 
 	if err != nil {

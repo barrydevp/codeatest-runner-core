@@ -6,7 +6,7 @@ type UserQuiz struct {
 	UserTopic primitive.ObjectID `json:"user_topic" bson:"user_topic"`
 	Quiz      primitive.ObjectID `json:"quiz" bson:"quiz"`
 	Result    Result             `json:"result" bson:"result"`
-	CreatedAt primitive.DateTime `json:"created_at"`
+	CreatedAt primitive.DateTime `json:"created_at" bson:"created_at"`
 
 	UserTopicObj *UserTopic
 	QuizObj      *Quiz

@@ -6,9 +6,26 @@ import (
 
 	"github.com/barrydevp/codeatest-runner-core/connections"
 	"github.com/barrydevp/codeatest-runner-core/model"
+	"github.com/barrydevp/codeatest-runner-core/puller"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func MarkProcessing(ctx context.Context, data *puller.Data) (err error) {
+	err = MarkProcessingSubmit(ctx, data.Submit)
+
+	if err != nil {
+		return
+	}
+
+	err = CreateJob(ctx, data.Job)
+
+	if err != nil {
+		return
+	}
+
+	return nil
+}
 
 func MarkProcessingSubmit(ctx context.Context, submit *model.Submit) error {
 
@@ -16,8 +33,6 @@ func MarkProcessingSubmit(ctx context.Context, submit *model.Submit) error {
 
 	filter := bson.D{{"_id", submit.Id}}
 	update := bson.D{{"$set", bson.M{"status": "processing"}}}
-
-	submit.Status = "processing"
 
 	result, err := SubmitColl.UpdateOne(context.TODO(), filter, update)
 
@@ -28,6 +43,8 @@ func MarkProcessingSubmit(ctx context.Context, submit *model.Submit) error {
 	if result.MatchedCount == 0 {
 		return errors.New("cannot found submit to mark processing")
 	}
+
+	submit.Status = "processing"
 
 	return nil
 }
@@ -53,6 +70,43 @@ func CreateJob(ctx context.Context, job *model.Job) (err error) {
 	return nil
 }
 
+func CommitData(ctx context.Context, data *puller.Data) (err error) {
+
+	JobColl := connections.GetModel("jobs")
+	SubmitColl := connections.GetModel("submits")
+
+	job := data.Job
+	submit := data.Submit
+
+	filterSubmit := bson.D{{"_id", submit.Id}}
+	updateSubmit := bson.D{{"$set", bson.M{"status": submit.Status, "result": submit.Result}}}
+
+	result, err := SubmitColl.UpdateOne(ctx, filterSubmit, updateSubmit)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("cannot commit for submit")
+	}
+
+	filterJob := bson.D{{"_id", job.Id}}
+	updateJob := bson.D{{"$set", bson.M{"status": job.Status, "results": job.Results}}}
+
+	result, err = JobColl.UpdateOne(ctx, filterJob, updateJob)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("cannot commit for job")
+	}
+
+	return nil
+}
+
 func ToBsonM(val interface{}) (bsonM *bson.M, err error) {
 	bsonBytes, err := bson.Marshal(val)
 	if err != nil {
@@ -62,6 +116,23 @@ func ToBsonM(val interface{}) (bsonM *bson.M, err error) {
 	bsonM = new(bson.M)
 
 	err = bson.Unmarshal(bsonBytes, bsonM)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+func ToBsonD(val interface{}) (bsonD *bson.D, err error) {
+	bsonBytes, err := bson.Marshal(val)
+	if err != nil {
+		return
+	}
+
+	bsonD = new(bson.D)
+
+	err = bson.Unmarshal(bsonBytes, bsonD)
 
 	if err != nil {
 		return nil, err

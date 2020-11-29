@@ -27,9 +27,9 @@ type Runner struct {
 type RunnerCmd struct {
 	Cmd *exec.Cmd
 
-	TestCase model.TestCase
+	TestCase *model.TestCase
 
-	Limit model.Limit
+	Limit *model.Limit
 
 	Output string
 }
@@ -86,8 +86,8 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 
 		rCmd := RunnerCmd{
 			cmd,
-			testCases[i],
-			limit,
+			&testCases[i],
+			&limit,
 			"",
 		}
 
