@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	// "path"
+	// "runtime"
 
 	// "fmt"
 	"io/ioutil"
@@ -22,7 +24,14 @@ var DEFAULT_PROJECT_ID string
 var DEFAULT_BUCKET_NAME string
 
 func init() {
-	DEFAULT_CREDENTIALS, _ = filepath.Abs("./services/credentials.json")
+
+	credentialsJsonFile := os.Getenv("CREDENTIALS_JSON_FILE")
+
+	if credentialsJsonFile == "" {
+		log.Fatal("Missing env: CREDENTIALS_JSON_FILE")
+	}
+
+	DEFAULT_CREDENTIALS = credentialsJsonFile
 
 	// DEFAULT_PROJECT_ID = "code-and-t"
 	// DEFAULT_BUCKET_NAME = "codeatest"
