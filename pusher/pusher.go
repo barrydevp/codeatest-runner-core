@@ -104,7 +104,43 @@ func CommitData(ctx context.Context, data *puller.Data) (err error) {
 		return errors.New("cannot commit for job")
 	}
 
+	err = updateResultUserQuiz(data.Submit, data.Submit.UserQuizObj)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func updateResultUserQuiz(submit *model.Submit, userQuiz *model.UserQuiz) error {
+
+	UserQuizColl := connections.GetModel("userquizzes")
+
+	lastResult := userQuiz.Result
+	newResult := submit.Result
+
+	if lastResult.Score > newResult.Score {
+		return nil
+	}
+
+	filter := bson.D{{"_id", submit.UserQuiz}}
+	update := bson.D{{"$set", bson.M{"result": bson.M{"score": newResult.Score, "memory_used": newResult.MemoryUsed, "time": newResult.Time}}}}
+
+	result, err := UserQuizColl.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("cannot found user_quiz to mark processing")
+	}
+
+	submit.Status = "processing"
+
+	return nil
+
 }
 
 func ToBsonM(val interface{}) (bsonM *bson.M, err error) {

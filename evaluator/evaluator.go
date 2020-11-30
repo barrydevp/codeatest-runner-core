@@ -40,3 +40,42 @@ func Evaluate(rCmd *runner.RunnerCmd) *model.JobResult {
 		isPassed,
 	}
 }
+
+func CaculateResult(submit *model.Submit, quiz *model.Quiz, results []model.JobResult) *model.Result {
+	lastResult := submit.Result
+	quizScore := quiz.Stat.Score
+
+	numberOfTest := len(quiz.TestCaseObjs)
+	if numberOfTest == 0 {
+		numberOfTest = 1
+	}
+
+	scorePerTest := quizScore / int32(numberOfTest)
+
+	var totalScore int32 = 0
+	var totalMemoryUsed int64 = 0
+	var totalTime int64 = 0
+
+	for index, _ := range results {
+		totalMemoryUsed += results[index].RunMemory
+		totalTime += results[index].RunTime
+
+		if results[index].IsPassed {
+			totalScore += scorePerTest
+		}
+	}
+
+	result := model.Result{
+		lastResult.Score,
+		lastResult.Time,
+		lastResult.MemoryUsed,
+	}
+
+	if lastResult.Score < totalScore {
+		result.Score = totalScore
+		result.MemoryUsed = totalMemoryUsed
+		result.Time = totalTime
+	}
+
+	return &result
+}

@@ -106,6 +106,8 @@ func (d *Dispatcher) ProcessOne(ctx context.Context) {
 	data.Job.Results = results
 	data.Job.Status = "done"
 	data.Submit.Status = "completed"
+	data.Submit.Result = *evaluator.CaculateResult(data.Submit, data.Quiz, results)
+	log.Println("[RESULT]: ", data.Submit.Result)
 
 	err = pusher.CommitData(ctx, data)
 
