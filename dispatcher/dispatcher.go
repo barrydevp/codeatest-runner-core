@@ -23,9 +23,11 @@ type Dispatcher struct {
 
 	Ctx context.Context
 
-	IsRunning bool
-
 	Delay int
+
+	IsRunning bool
+	RunCount  int
+	Cycle     int
 }
 
 func (d *Dispatcher) StopRun() {
@@ -40,15 +42,19 @@ func (d *Dispatcher) Run() {
 		d.Ctx = context.Background()
 	}
 
-	count := 0
+	d.RunCount = 0
 
 	fmt.Println("[Dispatcher] START RUNNING...")
 
 	for d.IsRunning {
-		count++
-		fmt.Println("[TIME]: ", count)
+		if d.RunCount > 100000 {
+			d.Cycle++
+			d.RunCount = 0
+		}
+		d.RunCount++
+		fmt.Println("[TIME]: ", d.RunCount)
 		d.ProcessOne(d.Ctx)
-		fmt.Println("[DONE]: ", count)
+		fmt.Println("[DONE]: ", d.RunCount)
 
 		delayTime := d.Delay
 
