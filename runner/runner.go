@@ -36,6 +36,7 @@ type RunnerCmd struct {
 }
 
 func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
+	r.State = "in-processing"
 
 	if data == nil {
 		return nil, errors.New("[RunnerErro]: invalid data.")
@@ -125,6 +126,8 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 	if err != nil {
 		log.Printf("[WARNING] Cannot rm %s\n", data.FilePath)
 	}
+
+	r.State = "after-processing"
 
 	return rCmds, nil
 }

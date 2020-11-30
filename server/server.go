@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,6 +30,7 @@ type HttpServer struct {
 func (hs *HttpServer) ListenAndServe() {
 	http.HandleFunc("/", greet)
 	http.HandleFunc("/ping", ping)
+	http.HandleFunc("/state", hs.state)
 
 	if hs.PORT == "" {
 		log.Fatal("Missing Server PORT")
@@ -53,5 +55,36 @@ func ping(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "Pong! %s", time.Now())
+	}
+}
+
+func (hs *HttpServer) state(w http.ResponseWriter, r *http.Request) {
+
+	state := map[string]interface{}{
+		"dispatcher": map[string]interface{}{
+			"name":       hs.Dispatcher.Name,
+			"is_running": hs.Dispatcher.IsRunning,
+			"delay":      hs.Dispatcher.Delay,
+		},
+		"runner": map[string]interface{}{
+			"name":    hs.Dispatcher.Runner.Name,
+			"state":   hs.Dispatcher.Runner.State,
+			"command": hs.Dispatcher.Runner.Command,
+		},
+		"puller": map[string]interface{}{
+			"language":    hs.Dispatcher.Puller.Language,
+			"bucket_size": hs.Dispatcher.Puller.BucketSize,
+		},
+	}
+	stateJson, err := json.Marshal(state)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, err.Error())
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("content-type", "application/json")
+
+		w.Write(stateJson)
 	}
 }

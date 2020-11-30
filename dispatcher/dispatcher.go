@@ -28,6 +28,10 @@ type Dispatcher struct {
 	Delay int
 }
 
+func (d *Dispatcher) StopRun() {
+	d.IsRunning = false
+}
+
 func (d *Dispatcher) Run() {
 
 	d.IsRunning = true
