@@ -65,6 +65,8 @@ func (hs *HttpServer) state(w http.ResponseWriter, r *http.Request) {
 			"name":       hs.Dispatcher.Name,
 			"is_running": hs.Dispatcher.IsRunning,
 			"delay":      hs.Dispatcher.Delay,
+			"run_count":  hs.Dispatcher.RunCount,
+			"cycle":      hs.Dispatcher.Cycle,
 		},
 		"runner": map[string]interface{}{
 			"name":    hs.Dispatcher.Runner.Name,

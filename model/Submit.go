@@ -1,6 +1,10 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Result struct {
 	Score      int32 `json:"score" bson:"score"`
@@ -15,8 +19,8 @@ type Submit struct {
 	UploadFile string             `json:"upload_file" bson:"upload_file"`
 	Status     string             `json:"status" bson:"status"`
 	Result     Result             `json:"result" bson:"result"`
-	UpdatedAt  primitive.DateTime `json:"updated_at" bson:"updated_at"`
-	CreatedAt  primitive.DateTime `json:"created_at" bson:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at" bson:"updated_at"`
+	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
 
 	UserQuizObj *UserQuiz `json:"user_quiz_obj" bson:"user_quiz_obj"`
 }

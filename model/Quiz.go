@@ -1,6 +1,10 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Stat struct {
 	Difficult string `json:"difficult" bson:"difficult"`
@@ -32,8 +36,8 @@ type Quiz struct {
 	Stat        Stat               `json:"stat" bson:"stat"`
 	Limit       Limit              `json:"limit" bson:"limit"`
 	IsDeleted   bool               `json:"is_deleted" bson:"is_deleted"`
-	UpdatedAt   primitive.DateTime `json:"updated_at" bson:"updated_at"`
-	CreatedAt   primitive.DateTime `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 
 	TestCaseObjs []TestCase `json:"test_case_objs" bson:"test_case_objs"`
 }

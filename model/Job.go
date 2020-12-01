@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -24,6 +26,6 @@ type Job struct {
 	Submit    primitive.ObjectID `json:"submit" bson:"submit"`
 	Status    string             `json:"status" bson:"status"`
 	Results   Results            `json:"results" bson:"results"`
-	UpdatedAt primitive.DateTime `json:"updated_at" bson:"updated_at"`
-	CreatedAt primitive.DateTime `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }

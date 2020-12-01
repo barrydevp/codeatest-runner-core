@@ -71,11 +71,25 @@ func CaculateResult(submit *model.Submit, quiz *model.Quiz, results []model.JobR
 		lastResult.MemoryUsed,
 	}
 
-	if lastResult.Score < totalScore {
-		result.Score = totalScore
-		result.MemoryUsed = totalMemoryUsed
-		result.Time = totalTime
+	if lastResult.Score > totalScore {
+		return &result
 	}
+
+	if lastResult.Score == totalScore {
+		if lastResult.Time < totalTime {
+			return &result
+		}
+
+		if lastResult.Time == totalTime {
+			if lastResult.MemoryUsed < totalMemoryUsed {
+				return &result
+			}
+		}
+	}
+
+	result.Score = totalScore
+	result.MemoryUsed = totalMemoryUsed
+	result.Time = totalTime
 
 	return &result
 }

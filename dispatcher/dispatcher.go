@@ -69,6 +69,10 @@ func (d *Dispatcher) Run() {
 	fmt.Println("[Dispatcher] STOP RUNNING...")
 }
 
+func (d *Dispatcher) ProcessMany(ctx context.Context) {
+
+}
+
 func (d *Dispatcher) ProcessOne(ctx context.Context) {
 	data, err := d.Puller.PullData(ctx)
 

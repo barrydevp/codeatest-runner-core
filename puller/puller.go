@@ -79,8 +79,8 @@ func CreateJob(submit *model.Submit) *model.Job {
 		submit.Id,
 		"process",
 		model.Results{},
-		primitive.DateTime(time.Now().UnixNano()),
-		primitive.DateTime(time.Now().UnixNano()),
+		time.Now(),
+		time.Now(),
 	}
 
 	return &job
