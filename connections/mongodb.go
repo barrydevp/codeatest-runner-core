@@ -3,6 +3,7 @@ package connections
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,11 +11,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var MongoURI string
 var MongoClient *mongo.Client
 var MongoDatabase *mongo.Database
 
 func init() {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb+srv://root:MYdXPr7PEDwwf9hG@code-and-test.hug2u.mongodb.net/code-and-test"))
+	MongoURI = os.Getenv("MONGO_URI")
+
+	if MongoURI == "" {
+		log.Fatal("MONGO_URI is required.")
+	}
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(MongoURI))
 
 	if err != nil {
 		log.Fatal(err)
