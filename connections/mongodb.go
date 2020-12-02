@@ -16,10 +16,10 @@ var MongoClient *mongo.Client
 var MongoDatabase *mongo.Database
 
 func init() {
-	MongoURI = os.Getenv("MONGO_URI")
+	MongoURI = os.Getenv("MONGODB_URI")
 
 	if MongoURI == "" {
-		log.Fatal("MONGO_URI is required.")
+		log.Fatal("MONGODB_URI is required.")
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(MongoURI))
