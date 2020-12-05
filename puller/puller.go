@@ -32,6 +32,9 @@ type Puller struct {
 }
 
 func (p *Puller) PullDatas(ctx context.Context, worker *model.Worker) ([]Data, error) {
+	if p.BucketSize <= 0 {
+		return nil, errors.New("Puller.BucketSize must be positive value.")
+	}
 
 	submits, err := GetSubmits(ctx, p.Language, p.BucketSize)
 
