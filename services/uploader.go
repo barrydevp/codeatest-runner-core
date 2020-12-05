@@ -19,26 +19,29 @@ import (
 )
 
 var GGClient *storage.Client
-var DEFAULT_CREDENTIALS string
-var DEFAULT_PROJECT_ID string
-var DEFAULT_BUCKET_NAME string
+var CREDENTIALS string
+var PROJECT_ID string
+var BUCKET_NAME string
 
 func init() {
 
-	credentialsJsonFile := os.Getenv("CREDENTIALS_JSON_FILE")
+	CREDENTIALS = os.Getenv("CREDENTIALS_JSON_FILE")
+	PROJECT_ID = os.Getenv("PROJECT_ID")
+	BUCKET_NAME = os.Getenv("BUCKET_NAME")
 
-	if credentialsJsonFile == "" {
+	if CREDENTIALS == "" {
 		log.Fatal("Missing env: CREDENTIALS_JSON_FILE")
 	}
 
-	DEFAULT_CREDENTIALS = credentialsJsonFile
+	if PROJECT_ID == "" {
+		PROJECT_ID = "blissful-star-290200"
+	}
 
-	// DEFAULT_PROJECT_ID = "code-and-t"
-	// DEFAULT_BUCKET_NAME = "codeatest"
-	DEFAULT_PROJECT_ID = "abiding-weaver-291614c"
-	DEFAULT_BUCKET_NAME = "codeatest2"
+	if BUCKET_NAME == "" {
+		BUCKET_NAME = "codeatest-2"
+	}
 
-	GGClient = CreateGGClient(DEFAULT_CREDENTIALS, DEFAULT_PROJECT_ID)
+	GGClient = CreateGGClient(CREDENTIALS, PROJECT_ID)
 
 }
 func CreateGGClient(jsonPath, projectID string) *storage.Client {
@@ -53,7 +56,7 @@ func CreateGGClient(jsonPath, projectID string) *storage.Client {
 }
 
 func CreateBucket() *storage.BucketHandle {
-	return GGClient.Bucket(DEFAULT_BUCKET_NAME)
+	return GGClient.Bucket(BUCKET_NAME)
 }
 
 func DownloadFile(file string) (string, error) {

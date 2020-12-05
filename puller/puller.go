@@ -3,6 +3,7 @@ package puller
 import (
 	"context"
 	"errors"
+	// "fmt"
 	"time"
 
 	"github.com/barrydevp/codeatest-runner-core/connections"
@@ -27,10 +28,59 @@ type Data struct {
 type Puller struct {
 	Language string
 
-	BucketSize int
+	BucketSize int64
 }
 
-func (p *Puller) PullData(ctx context.Context) (*Data, error) {
+func (p *Puller) PullDatas(ctx context.Context, worker *model.Worker) ([]Data, error) {
+
+	submits, err := GetSubmits(ctx, p.Language, p.BucketSize)
+
+	if err != nil {
+		return nil, err
+	}
+
+	quizIds := make([]primitive.ObjectID, 0, len(submits))
+
+	datas := make([]Data, 0, len(submits))
+
+	for i, _ := range submits {
+		submits[i].UserQuizObj = &submits[i].UserQuizObjs[0]
+		quizIds = append(quizIds, submits[i].UserQuizObj.Quiz)
+
+		job := CreateJob(&submits[i], worker)
+		filePath, err := p.GetFilePath(&submits[i])
+
+		if err != nil {
+			return nil, err
+		}
+
+		datas = append(datas, Data{
+			Job:      job,
+			Submit:   &submits[i],
+			FilePath: filePath,
+		})
+	}
+
+	quizzes, err := GetQuizzes(ctx, quizIds)
+
+	if err != nil {
+		return nil, err
+	}
+
+	quizzesMap := make(map[primitive.ObjectID]*model.Quiz)
+
+	for i, _ := range quizzes {
+		quizzesMap[quizzes[i].Id] = &quizzes[i]
+	}
+
+	for i, _ := range datas {
+		datas[i].Quiz = quizzesMap[submits[i].UserQuizObj.Quiz]
+	}
+
+	return datas, nil
+}
+
+func (p *Puller) PullData(ctx context.Context, worker *model.Worker) (*Data, error) {
 
 	submit, err := GetSubmit(ctx, p.Language)
 
@@ -54,7 +104,7 @@ func (p *Puller) PullData(ctx context.Context) (*Data, error) {
 		return nil, err
 	}
 
-	job := CreateJob(submit)
+	job := CreateJob(submit, worker)
 
 	return &Data{
 		job,
@@ -69,13 +119,11 @@ func (p *Puller) GetFilePath(submit *model.Submit) (string, error) {
 	return services.DownloadFile(submit.UploadFile)
 }
 
-func CreateJob(submit *model.Submit) *model.Job {
-
-	workerId, _ := primitive.ObjectIDFromHex("5f942a3588e2242efc747de5")
+func CreateJob(submit *model.Submit, worker *model.Worker) *model.Job {
 
 	job := model.Job{
 		primitive.NilObjectID,
-		workerId,
+		worker.Id,
 		submit.Id,
 		"process",
 		model.Results{},
@@ -86,32 +134,6 @@ func CreateJob(submit *model.Submit) *model.Job {
 	return &job
 }
 
-// func GetSubmits(ctx context.Context) ([]model.Submit, error) {
-// 	stage := bson.D{
-// 		{"$match", bson.D{{"status", bson.M{"$in": []string{"pending", "retry"}}}}},
-// 		{"$limit", 10},
-// 		{"$lookup", bson.D{
-// 			{"from", "userquizzes"},
-// 			{"let", bson.D{{"user_quiz_id", "$user_quiz"}}},
-// 			{"pipeline", bson.D{
-// 				{"$match", bson.D{{"_id", "$$user_quiz_id"}}},
-// 				{"$lookup", bson.D{
-// 					{"from", "usertopics"},
-// 					{"let", bson.D{{"user_topic_id", "$user_topic"}}},
-// 					{"pipeline", bson.D{
-// 						{"$match", bson.D{{"_id", "$$user_topic_id"}}},
-// 						{"$lookup", bson.D{
-// 							{"from", "quizzes"},
-// 							{"localField", "quiz"},
-// 							{"foreignField", "_id"},
-// 							{"as", "quiz"},
-// 						}},
-// 					}}, }},
-// 			}},
-// 		}},
-// 	}
-// }
-
 func GetSubmits(ctx context.Context, language string, limit int64) ([]model.Submit, error) {
 	SubmitColl := connections.GetModel("submits")
 
@@ -119,14 +141,24 @@ func GetSubmits(ctx context.Context, language string, limit int64) ([]model.Subm
 
 	defer cancel()
 
-	opts := options.Find().SetSort(bson.D{{"created_at", 1}}).SetLimit(limit)
-
 	var submits []model.Submit
 
-	cursor, err := SubmitColl.Find(ctxTimeout, bson.M{
-		"status":   bson.M{"$in": []string{"pending", "retry"}},
-		"language": language,
-	}, opts)
+	matchS := bson.D{
+		{"$match", bson.D{{"status", bson.M{"$in": []string{"pending", "retry"}}}, {"language", language}}},
+	}
+	limitS := bson.D{
+		{"$limit", limit},
+	}
+	lookupS := bson.D{
+		{"$lookup", bson.D{
+			{"from", "userquizzes"},
+			{"localField", "user_quiz"},
+			{"foreignField", "_id"},
+			{"as", "user_quiz_objs"},
+		}},
+	}
+
+	cursor, err := SubmitColl.Aggregate(ctxTimeout, mongo.Pipeline{matchS, limitS, lookupS})
 
 	if err != nil {
 		return nil, err
@@ -235,7 +267,7 @@ func GetQuizV2(ctx context.Context, quizId primitive.ObjectID) (*model.Quiz, err
 		},
 	}
 
-	opts := options.Aggregate().SetMaxTime(2 * time.Second)
+	opts := options.Aggregate().SetMaxTime(5 * time.Second)
 
 	cursor, err := QuizColl.Aggregate(ctx, stage, opts)
 
@@ -250,6 +282,40 @@ func GetQuizV2(ctx context.Context, quizId primitive.ObjectID) (*model.Quiz, err
 	}
 
 	return &quizzes[0], nil
+}
+
+func GetQuizzes(ctx context.Context, quizIds []primitive.ObjectID) ([]model.Quiz, error) {
+	QuizColl := connections.GetModel("quizzes")
+
+	stage := mongo.Pipeline{
+		bson.D{
+			{"$match", bson.M{"_id": bson.M{"$in": quizIds}}},
+		},
+		bson.D{
+			{"$lookup", bson.M{
+				"from":         "testcases",
+				"localField":   "_id",
+				"foreignField": "quiz",
+				"as":           "test_case_objs",
+			}},
+		},
+	}
+
+	opts := options.Aggregate().SetMaxTime(10 * time.Second)
+
+	cursor, err := QuizColl.Aggregate(ctx, stage, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var quizzes []model.Quiz
+
+	if err = cursor.All(ctx, &quizzes); err != nil {
+		return nil, err
+	}
+
+	return quizzes, nil
 }
 
 func GetTestCases(ctx context.Context, quizId primitive.ObjectID) ([]model.TestCase, error) {

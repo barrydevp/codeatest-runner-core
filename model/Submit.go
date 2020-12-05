@@ -23,4 +23,6 @@ type Submit struct {
 	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
 
 	UserQuizObj *UserQuiz `json:"user_quiz_obj" bson:"user_quiz_obj"`
+
+	UserQuizObjs []UserQuiz `json:"user_quiz_objs" bson:"user_quiz_objs"`
 }

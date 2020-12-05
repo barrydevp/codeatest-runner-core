@@ -39,7 +39,7 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 	r.State = "in-processing"
 
 	if data == nil {
-		return nil, errors.New("[RunnerErro]: invalid data.")
+		return nil, errors.New("[RunnerError]: invalid data.")
 	}
 
 	quiz := data.Quiz
