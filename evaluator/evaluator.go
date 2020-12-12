@@ -13,7 +13,10 @@ func Evaluate(rCmd *runner.RunnerCmd) *model.JobResult {
 
 	testOutput := rCmd.TestCase.Output
 	testInput := rCmd.TestCase.Input
-	runOutput := string(rCmd.Output[:len(rCmd.Output)-1])
+	runOutput := ""
+	if rCmd.Output != "" {
+		runOutput = string(rCmd.Output[:len(rCmd.Output)-1])
+	}
 
 	fmt.Printf("TEST: -- IN: %s \nOUT: %s\n", testInput, testOutput)
 	fmt.Printf("RUN: OUT: %s\n", runOutput)

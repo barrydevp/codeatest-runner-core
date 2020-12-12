@@ -61,7 +61,7 @@ func (d *Dispatcher) Init() {
 		log.Fatal(fmt.Sprintf("[ERROR-TERMINATE] mark retry for all processing submit fail, error: %s\n", err.Error()))
 	}
 
-	log.Println(fmt.Sprintf("[INIT-STEP] Mark done %v processing submit", result.ModifiedCount))
+	log.Println(fmt.Sprintf("[INIT-STEP] Mark retry %v processing submit", result.ModifiedCount))
 
 	log.Println("[INIT-STEP] Start change Worker's status to 'up'")
 	d.Worker = &worker
