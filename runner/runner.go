@@ -16,23 +16,23 @@ import (
 )
 
 type Runner struct {
-	Name  string
-	State string
+	Name  string `msg:"name"`
+	State string `msg:"state"`
 
-	Command  string
-	BaseArgs []string
-	Env      []string
-	Dir      string
+	Command  string   `msg:"command"`
+	BaseArgs []string `msg:"base_args"`
+	Env      []string `msg:"env"`
+	Dir      string   `msg:"dir"`
 }
 
 type RunnerCmd struct {
 	Cmd *exec.Cmd
 
-	TestCase *model.TestCase
+	TestCase *model.TestCase `msg:"test_case"`
 
-	Limit *model.Limit
+	Limit *model.Limit `msg:"limit"`
 
-	Output string
+	Output string `msg:"output"`
 }
 
 func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {

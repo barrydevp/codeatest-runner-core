@@ -10,6 +10,7 @@ import (
 
 	"github.com/barrydevp/codeatest-runner-core/connections"
 	"github.com/barrydevp/codeatest-runner-core/evaluator"
+	"github.com/barrydevp/codeatest-runner-core/helpers"
 	"github.com/barrydevp/codeatest-runner-core/model"
 	"github.com/barrydevp/codeatest-runner-core/puller"
 	"github.com/barrydevp/codeatest-runner-core/pusher"
@@ -51,6 +52,9 @@ func (d *Dispatcher) Init() {
 	}).Decode(&worker)
 
 	if err != nil {
+		helpers.LogError(&worker, "load_worker_error", map[string]interface{}{
+			"error": err.Error(),
+		})
 		log.Fatal(fmt.Sprintf("[ERROR-TERMINATE] Cannot load worker %s from Database, error: %s\n", d.Name, err.Error()))
 	}
 
@@ -58,16 +62,27 @@ func (d *Dispatcher) Init() {
 	result, err := d.markRetryAllProcessingSubmit()
 
 	if err != nil {
+		helpers.LogError(&worker, "mark_retry_all_processing_submit_error", map[string]interface{}{
+			"error": err.Error(),
+		})
+
 		log.Fatal(fmt.Sprintf("[ERROR-TERMINATE] mark retry for all processing submit fail, error: %s\n", err.Error()))
 	}
 
 	log.Println(fmt.Sprintf("[INIT-STEP] Mark retry %v processing submit", result.ModifiedCount))
+	helpers.LogInfo(&worker, "mark_retry_all_processing_submit_ok", map[string]interface{}{
+		"result": result,
+	})
 
 	log.Println("[INIT-STEP] Start change Worker's status to 'up'")
 	d.Worker = &worker
 	err = d.updateWorkerStatus("up")
 
 	if err != nil {
+		helpers.LogError(&worker, "change_worker_status_up_error", map[string]interface{}{
+			"error": err.Error(),
+		})
+
 		log.Fatal(fmt.Sprintf("[ERROR-TERMINATE] update status worker fail, error: %s\n", err.Error()))
 	}
 
@@ -134,14 +149,12 @@ func (d *Dispatcher) Run() {
 	fmt.Println("[Dispatcher] START RUNNING...")
 
 	for d.IsRunning {
-		if d.RunCount > 100000 {
+		if d.RunCount > 10000 {
 			d.Cycle++
 			d.RunCount = 0
 		}
 		d.RunCount++
-		fmt.Println("[TIME]: ", d.RunCount)
 		d.ProcessMany()
-		fmt.Println("[DONE]: ", d.RunCount)
 
 		delayTime := d.Delay
 
@@ -149,7 +162,6 @@ func (d *Dispatcher) Run() {
 			delayTime = DELAY_TIME
 		}
 
-		fmt.Printf("[DELAY]: %vs\n", delayTime)
 		time.Sleep(time.Second * time.Duration(delayTime))
 	}
 
@@ -160,14 +172,22 @@ func (d *Dispatcher) ProcessMany() {
 	datas, err := d.Puller.PullDatas(d.Ctx, d.Worker)
 
 	if err != nil {
+		helpers.LogError(d.Worker, "pull_datas_error", map[string]interface{}{
+			"error":  err.Error(),
+			"puller": d.Puller,
+		})
 		log.Println(err)
 
 		return
 	}
 
-	wg := sync.WaitGroup{}
+	log.Printf("Running: %v Jobs --- [%v|%v]", len(datas), d.RunCount, d.Cycle)
 
-	log.Println(len(datas))
+	if len(datas) == 0 {
+		return
+	}
+
+	wg := sync.WaitGroup{}
 
 	fork := func(data *puller.Data) {
 		d.ProcessOne(data)
@@ -182,6 +202,8 @@ func (d *Dispatcher) ProcessMany() {
 
 	wg.Wait()
 
+	log.Printf("Done: %v Jobs", len(datas))
+
 	return
 }
 
@@ -191,6 +213,10 @@ func (d *Dispatcher) ProcessOne(data *puller.Data) {
 	err := pusher.MarkProcessing(ctx, data)
 
 	if err != nil {
+		helpers.LogError(d.Worker, "mark_processing_error", map[string]interface{}{
+			"error": err.Error(),
+			"data":  data,
+		})
 		log.Println(err)
 
 		return
@@ -199,6 +225,11 @@ func (d *Dispatcher) ProcessOne(data *puller.Data) {
 	rCmds, err := d.Runner.Process(data)
 
 	if err != nil {
+		helpers.LogError(d.Worker, "process_error", map[string]interface{}{
+			"error":  err.Error(),
+			"data":   data,
+			"runner": d.Runner,
+		})
 		log.Println(err)
 
 		return
@@ -207,7 +238,6 @@ func (d *Dispatcher) ProcessOne(data *puller.Data) {
 	results := make(model.Results, 0, len(data.Quiz.TestCaseObjs))
 
 	for _, rCmd := range rCmds {
-
 		result := evaluator.Evaluate(rCmd)
 
 		results = append(results, *result)
@@ -217,11 +247,21 @@ func (d *Dispatcher) ProcessOne(data *puller.Data) {
 	data.Job.Status = "done"
 	data.Submit.Status = "completed"
 	data.Submit.Result = *evaluator.CaculateResult(data.Submit, data.Quiz, results)
+
+	helpers.LogInfo(d.Worker, "process_success", map[string]interface{}{
+		"results": data.Job.Results,
+		"cmds":    rCmds,
+	})
+
 	log.Println("[RESULT]: ", data.Submit.Result)
 
 	err = pusher.CommitData(ctx, data)
 
 	if err != nil {
+		helpers.LogError(d.Worker, "commit_data_error", map[string]interface{}{
+			"error": err.Error(),
+			"data":  data,
+		})
 		log.Println(err)
 
 		return
