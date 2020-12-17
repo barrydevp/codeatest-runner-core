@@ -9,7 +9,7 @@ import (
 )
 
 func Evaluate(rCmd *runner.RunnerCmd) *model.JobResult {
-	fmt.Println(rCmd.Cmd.String())
+	// fmt.Println(rCmd.Cmd.String())
 
 	testOutput := rCmd.TestCase.Output
 	testInput := rCmd.TestCase.Input
@@ -21,11 +21,17 @@ func Evaluate(rCmd *runner.RunnerCmd) *model.JobResult {
 	fmt.Printf("TEST: -- IN: %s \nOUT: %s\n", testInput, testOutput)
 	fmt.Printf("RUN: OUT: %s\n", runOutput)
 
-	usage, _ := rCmd.Cmd.ProcessState.SysUsage().(*syscall.Rusage)
+	var memory int64 = 0
+	var time int64 = 0
+
 	exitCode := rCmd.Cmd.ProcessState.ExitCode()
 
-	memory := usage.Maxrss
-	time := usage.Utime.Usec
+	if exitCode == 0 {
+		usage, _ := rCmd.Cmd.ProcessState.SysUsage().(*syscall.Rusage)
+
+		memory = usage.Maxrss
+		time = usage.Utime.Usec
+	}
 
 	fmt.Printf("STATS: mem: %v cpu: %v\n", memory, time)
 

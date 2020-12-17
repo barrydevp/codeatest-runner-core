@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +25,10 @@ type Runner struct {
 	BaseArgs []string `msg:"base_args"`
 	Env      []string `msg:"env"`
 	Dir      string   `msg:"dir"`
+
+	NeedBuild     bool     `msg:"need_build"`
+	BuildCommand  string   `msg:"build_command"`
+	BuildBaseArgs []string `msg:"build_base_args"`
 }
 
 type RunnerCmd struct {
@@ -59,19 +65,67 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 
 	testCases := quiz.TestCaseObjs
 
+	runPath := data.FilePath
+
 	rCmds := make([]*RunnerCmd, 0, len(testCases))
+
+	if r.NeedBuild {
+		args := make([]string, 0, len(r.BuildBaseArgs)+1)
+		args = append(args, r.BuildBaseArgs...)
+
+		dirPath := filepath.Dir(data.FilePath)
+		fileName := filepath.Base(data.FilePath)
+		buildPath := filepath.Join(dirPath, strings.Replace(fileName, ".", "", -1))
+		args = append(args, buildPath)
+		args = append(args, data.FilePath)
+		runPath = buildPath
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(120))
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, r.BuildCommand, args...)
+		cmd.Dir = r.Dir
+		cmd.Env = r.Env
+
+		// fmt.Println(cmd.String())
+		output, err := cmd.CombinedOutput()
+
+		if err != nil || cmd.ProcessState.ExitCode() != 0 {
+			log.Printf("[RunnerLog]: Error while run build cmd %s\n", err.Error())
+
+			for i := 0; i < len(testCases); i++ {
+				rCmd := RunnerCmd{
+					cmd,
+					&testCases[i],
+					&limit,
+					string(output),
+				}
+
+				rCmds = append(rCmds, &rCmd)
+			}
+
+			return rCmds, nil
+		}
+
+	}
 
 	for i := 0; i < len(testCases); i++ {
 		input := testCases[i].Input
 
 		args := make([]string, 0, len(r.BaseArgs)+1)
 		args = append(args, r.BaseArgs...)
-		args = append(args, data.FilePath)
+
+		runCommand := runPath
+
+		if !r.NeedBuild {
+			args = append(args, runPath)
+			runCommand = r.Command
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutDur)
 		defer cancel()
 
-		cmd := exec.CommandContext(ctx, r.Command, args...)
+		cmd := exec.CommandContext(ctx, runCommand, args...)
 		cmd.Dir = r.Dir
 		cmd.Env = r.Env
 
@@ -121,13 +175,18 @@ func (r *Runner) Process(data *puller.Data) ([]*RunnerCmd, error) {
 	wg.Wait()
 
 	// clear file
-	err := os.Remove(data.FilePath)
-
-	if err != nil {
-		log.Printf("[WARNING] Cannot rm %s\n", data.FilePath)
-	}
+	RemoveFile(data.FilePath)
+	RemoveFile(runPath)
 
 	r.State = "after-processing"
 
 	return rCmds, nil
+}
+
+func RemoveFile(filePath string) {
+	err := os.Remove(filePath)
+
+	if err != nil {
+		log.Printf("[WARNING] Cannot rm %s\n", filePath)
+	}
 }
